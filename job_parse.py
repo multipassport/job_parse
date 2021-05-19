@@ -116,26 +116,27 @@ if __name__ == '__main__':
     hh_languages_info = {}
     sj_languages_info = {}
     languages = [
-        'JavaScript',
-        'Java',
-        'C#',
         'Python',
+        'Java',
+        'JavaScript',
+        'C#',
         'PHP',
-        'TypeScript',
+        'C',
         'C++',
+        'R',
+        'Objective-C',
         'Swift',
-        'Ruby',
+        'TypeScript',
+        'Matlab',
         'Kotlin',
         'Go',
+        'Ruby',
+        'VBA',
+        'RUST',
         'Scala',
-        'C',
-        '1C',
-        'T-SQL',
-        'Dart',
-        'PL-SQL',
-        'Pascal/Delphi',
-        'R',
-        'Apex'
+        'Visual Basic',
+        'Ada',
+        'Lua',
         ]
 
     for language in languages:
