@@ -9,41 +9,43 @@ from terminaltables import AsciiTable
 
 
 def get_salary_range_hh(vacancy):
-    if vacancy['salary']['currency'] != 'RUR':
-        return None, None
     minimal_salary = vacancy['salary']['from']
     maximal_salary = vacancy['salary']['to']
+    if vacancy['salary']['currency'] != 'RUR':
+        minimal_salary, maximal_salary = None, None
     return minimal_salary, maximal_salary
 
 
 def get_salary_range_sj(vacancy):
-    if (minimal_salary := vacancy['payment_from']) == 0:
-        minimal_salary = None
-    if (maximal_salary := vacancy['payment_to']) == 0:
-        maximal_salary = None
+    minimal_salary = vacancy['payment_from']
+    maximal_salary = vacancy['payment_to']
     return minimal_salary, maximal_salary
 
 
 def predict_salary(salary_from, salary_to):
+    salary_to_coefficient = 0.8
+    salary_from_coefficient = 1.2
     if not salary_from and not salary_to:
         return None
     elif salary_from and salary_to:
         mean_salary = (salary_from + salary_to)/2
     elif not salary_from:
-        mean_salary = salary_to * 0.8
+        mean_salary = salary_to * salary_to_coefficient
     elif not salary_to:
-        mean_salary = salary_from * 1.2
+        mean_salary = salary_from * salary_from_coefficient
     return mean_salary
 
 
 def fetch_vacancies_hh(url, language):
     moscow_id = 1
+    days_to_parse = 30
+    vacancies_per_page = 100
     payload = {
         'text': f'программист {language}',
         'area': moscow_id,
-        'period': 30,
+        'period': days_to_parse,
         'only_with_salary': True,
-        'per_page': 100
+        'per_page': vacancies_per_page
         }
     for page in count():
         payload['page'] = page
@@ -56,13 +58,14 @@ def fetch_vacancies_hh(url, language):
 
 
 def fetch_vacancies_sj(url, language, token):
+    vacancies_per_page = 100
     header = {'X-Api-App-Id': token}
     payload = {
         'keyword': f'Программист {language}',
         'catalogues': 'Разработка, программирование',
         'town': 'Москва',
         'currency': 'rub',
-        'count': 100,
+        'count': vacancies_per_page,
         }
     for page in count():
         payload['page'] = page
@@ -74,17 +77,17 @@ def fetch_vacancies_sj(url, language, token):
             break
 
 
-def get_language_vacancies(
-        vacancy_salaries, total_vacancies, language_vacancies, language
-        ):
+def get_language_vacancies(vacancy_salaries, total_vacancies, language):
     mean_salary = numpy.nanmean(numpy.array(vacancy_salaries, dtype=float))
 
     vacancies_processed = sum(1 for salary in vacancy_salaries if salary)
-    language_vacancies[language]['vacancies_found'] = total_vacancies
-    language_vacancies[language]['vacancies_processed'] = vacancies_processed
-    language_vacancies[language]['average_salary'] = None
+    language_vacancies = {
+        'vacancies_found': total_vacancies,
+        'vacancies_processed': vacancies_processed,
+        'average_salary': None
+    }
     if not isnan(mean_salary):
-        language_vacancies[language]['average_salary'] = int(mean_salary)
+        language_vacancies['average_salary'] = int(mean_salary)
     return language_vacancies
 
 
@@ -142,7 +145,6 @@ if __name__ == '__main__':
         ]
 
     for language in languages:
-        sj_vacancies_for_language[language] = {}
         sj_vacancy_salaries = []
         sj_vacancies = fetch_vacancies_sj(sj_url, language, sj_token)
 
@@ -151,11 +153,11 @@ if __name__ == '__main__':
             salary = predict_salary(salary_from, salary_to)
             sj_vacancy_salaries.append(salary)
         sj_total_vacancies = len(sj_vacancy_salaries)
-        get_language_vacancies(
-            sj_vacancy_salaries, sj_total_vacancies, sj_vacancies_for_language, language
+        sj_language_vacancies = get_language_vacancies(
+            sj_vacancy_salaries, sj_total_vacancies, language
             )
+        sj_vacancies_for_language[language] = sj_language_vacancies
 
-        hh_vacancies_for_language[language] = {}
         hh_vacancy_salaries = []
         hh_vacancies = fetch_vacancies_hh(hh_url, language)
 
@@ -164,9 +166,10 @@ if __name__ == '__main__':
             salary = predict_salary(salary_from, salary_to)
             hh_vacancy_salaries.append(salary)
         hh_total_vacancies = len(hh_vacancy_salaries)
-        get_language_vacancies(
-            hh_vacancy_salaries, hh_total_vacancies, hh_vacancies_for_language, language
+        hh_language_vacancies = get_language_vacancies(
+            hh_vacancy_salaries, hh_total_vacancies, language
             )
+        hh_vacancies_for_language[language] = hh_language_vacancies
 
     print(get_table(hh_vacancies_for_language, 'HeadHunters'))
     print(get_table(sj_vacancies_for_language, 'SuperJob'))
