@@ -1,3 +1,4 @@
+import logging
 import numpy
 import os
 import requests
@@ -5,6 +6,7 @@ import requests
 from dotenv import load_dotenv
 from itertools import count
 from math import isnan
+from requests.exceptions import HTTPError
 from terminaltables import AsciiTable
 
 
@@ -112,7 +114,50 @@ def get_table(vacancies, title):
     return table.table
 
 
+def get_sj_vacancies(
+        fetch_vacancies_sj,
+        get_salary_range_sj,
+        predict_salary,
+        get_language_vacancies,
+        language
+        ):
+    sj_vacancy_salaries = []
+    sj_vacancies = fetch_vacancies_sj(sj_url, language, sj_token)
+
+    for vacancy in sj_vacancies:
+        salary_from, salary_to = get_salary_range_sj(vacancy)
+        salary = predict_salary(salary_from, salary_to)
+        sj_vacancy_salaries.append(salary)
+    sj_total_vacancies = len(sj_vacancy_salaries)
+    sj_language_vacancies = get_language_vacancies(
+        sj_vacancy_salaries, sj_total_vacancies, language
+        )
+    return sj_language_vacancies
+
+
+def get_hh_vacancies(
+        fetch_vacancies_hh,
+        get_salary_range_hh,
+        predict_salary,
+        get_language_vacancies,
+        language
+        ):
+    hh_vacancy_salaries = []
+    hh_vacancies = fetch_vacancies_hh(hh_url, language)
+
+    for vacancy in hh_vacancies:
+        salary_from, salary_to = get_salary_range_hh(vacancy)
+        salary = predict_salary(salary_from, salary_to)
+        hh_vacancy_salaries.append(salary)
+    hh_total_vacancies = len(hh_vacancy_salaries)
+    hh_language_vacancies = get_language_vacancies(
+        hh_vacancy_salaries, hh_total_vacancies, language
+        )
+    return hh_language_vacancies
+
+
 if __name__ == '__main__':
+    logging.basicConfig(filename='job_parse.log', filemode='w')
     load_dotenv()
     sj_token = os.getenv('SUPERJOB_TOKEN')
     hh_url = 'https://api.hh.ru/vacancies'
@@ -145,31 +190,26 @@ if __name__ == '__main__':
         ]
 
     for language in languages:
-        sj_vacancy_salaries = []
-        sj_vacancies = fetch_vacancies_sj(sj_url, language, sj_token)
-
-        for vacancy in sj_vacancies:
-            salary_from, salary_to = get_salary_range_sj(vacancy)
-            salary = predict_salary(salary_from, salary_to)
-            sj_vacancy_salaries.append(salary)
-        sj_total_vacancies = len(sj_vacancy_salaries)
-        sj_language_vacancies = get_language_vacancies(
-            sj_vacancy_salaries, sj_total_vacancies, language
-            )
-        sj_vacancies_for_language[language] = sj_language_vacancies
-
-        hh_vacancy_salaries = []
-        hh_vacancies = fetch_vacancies_hh(hh_url, language)
-
-        for vacancy in hh_vacancies:
-            salary_from, salary_to = get_salary_range_hh(vacancy)
-            salary = predict_salary(salary_from, salary_to)
-            hh_vacancy_salaries.append(salary)
-        hh_total_vacancies = len(hh_vacancy_salaries)
-        hh_language_vacancies = get_language_vacancies(
-            hh_vacancy_salaries, hh_total_vacancies, language
-            )
-        hh_vacancies_for_language[language] = hh_language_vacancies
+        try:
+            sj_vacancies_for_language[language] = get_sj_vacancies(
+                fetch_vacancies_sj,
+                get_salary_range_sj,
+                predict_salary,
+                get_language_vacancies,
+                language
+                )
+        except (HTTPError, ConnectionError) as error:
+            logging.exception(error)
+        try:
+            hh_vacancies_for_language[language] = get_hh_vacancies(
+                fetch_vacancies_hh,
+                get_salary_range_hh,
+                predict_salary,
+                get_language_vacancies,
+                language
+                )
+        except (HTTPError, ConnectionError) as error:
+            logging.exception(error)
 
     print(get_table(hh_vacancies_for_language, 'HeadHunters'))
     print(get_table(sj_vacancies_for_language, 'SuperJob'))
