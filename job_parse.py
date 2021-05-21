@@ -87,7 +87,7 @@ def get_language_vacancies(
     return language_vacancies
 
 
-def draw_table(vacancies, title):
+def get_table(vacancies, title):
     header_row = [
         'Язык программирования',
         'Вакансий найдено',
@@ -105,7 +105,7 @@ def draw_table(vacancies, title):
         vacancies_table.append(table_row)
 
     table = AsciiTable(vacancies_table, title=title)
-    print(table.table)
+    return table.table
 
 
 if __name__ == '__main__':
@@ -166,5 +166,5 @@ if __name__ == '__main__':
             hh_vacancy_salaries, hh_total_vacancies, hh_vacancies_for_language, language
             )
 
-    draw_table(hh_vacancies_for_language, 'HeadHunters')
-    draw_table(sj_vacancies_for_language, 'SuperJob')
+    print(get_table(hh_vacancies_for_language, 'HeadHunters'))
+    print(get_table(sj_vacancies_for_language, 'SuperJob'))
