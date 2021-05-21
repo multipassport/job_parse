@@ -37,40 +37,41 @@ def predict_salary(salary_from, salary_to):
 
 
 def fetch_vacancies_hh(url, language):
+    moscow_id = 1
+    payload = {
+        'text': f'программист {language}',
+        'area': moscow_id,
+        'period': 30,
+        'only_with_salary': True,
+        'per_page': 100
+        }
     for page in count():
-        payload = {
-            'text': f'программист {language}',
-            'area': 1,
-            'period': 30,
-            'page': page,
-            'only_with_salary': True,
-            'per_page': 100
-            }
+        payload['page'] = page
         response = requests.get(url, params=payload)
         response.raise_for_status()
         vacancies_on_page = response.json()
-        if page >= vacancies_on_page['pages']:
-            break
         yield from vacancies_on_page['items']
+        if page + 1 >= vacancies_on_page['pages']:
+            break
 
 
-def fetch_vacancies_sj(url, language):
-    header = {'X-Api-App-Id': os.getenv('SUPERJOB_TOKEN')}
+def fetch_vacancies_sj(url, language, token):
+    header = {'X-Api-App-Id': token}
+    payload = {
+        'keyword': f'Программист {language}',
+        'catalogues': 'Разработка, программирование',
+        'town': 'Москва',
+        'currency': 'rub',
+        'count': 100,
+        }
     for page in count():
-        payload = {
-            'keyword': f'Программист {language}',
-            'catalogues': 'Разработка, программирование',
-            'town': 'Москва',
-            'currency': 'rub',
-            'page': page,
-            'count': 100,
-            }
+        payload['page'] = page
         response = requests.get(url, params=payload, headers=header)
         response.raise_for_status()
         vacancies_on_page = response.json()
-        if page >= vacancies_on_page['total']:
-            break
         yield from vacancies_on_page['objects']
+        if not vacancies_on_page['more']:
+            break
 
 
 def get_language_vacancies(
@@ -110,6 +111,7 @@ def get_table(vacancies, title):
 
 if __name__ == '__main__':
     load_dotenv()
+    sj_token = os.getenv('SUPERJOB_TOKEN')
     hh_url = 'https://api.hh.ru/vacancies'
     sj_url = 'https://api.superjob.ru/2.33/vacancies/'
 
@@ -142,7 +144,7 @@ if __name__ == '__main__':
     for language in languages:
         sj_vacancies_for_language[language] = {}
         sj_vacancy_salaries = []
-        sj_vacancies = fetch_vacancies_sj(sj_url, language)
+        sj_vacancies = fetch_vacancies_sj(sj_url, language, sj_token)
 
         for vacancy in sj_vacancies:
             salary_from, salary_to = get_salary_range_sj(vacancy)
