@@ -18,12 +18,6 @@ def get_salary_range_hh(vacancy):
     return minimal_salary, maximal_salary
 
 
-def get_salary_range_sj(vacancy):
-    minimal_salary = vacancy['payment_from']
-    maximal_salary = vacancy['payment_to']
-    return minimal_salary, maximal_salary
-
-
 def predict_salary(salary_from, salary_to):
     salary_to_coefficient = 0.8
     salary_from_coefficient = 1.2
@@ -120,8 +114,9 @@ def get_sj_table_content(language):
     vacancies = fetch_vacancies_sj(sj_url, language, sj_token)
 
     for vacancy in vacancies:
-        salary_from, salary_to = get_salary_range_sj(vacancy)
-        salary = predict_salary(salary_from, salary_to)
+        minimal_salary = vacancy['payment_from']
+        maximal_salary = vacancy['payment_to']
+        salary = predict_salary(minimal_salary, maximal_salary)
         vacancy_salaries.append(salary)
     total_vacancies = len(vacancy_salaries)
     table_content = get_table_content(
