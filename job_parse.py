@@ -118,7 +118,7 @@ def get_sj_table_content(language):
         maximal_salary = vacancy['payment_to']
         salary = predict_salary(minimal_salary, maximal_salary)
         vacancy_salaries.append(salary)
-    total_vacancies = len(vacancy_salaries)
+    total_vacancies = fetch_sj_vacancies_number(sj_url, language, sj_token)
     table_content = get_table_content(
         vacancy_salaries, total_vacancies, language)
     return table_content
@@ -132,10 +132,37 @@ def get_hh_table_content(language):
         salary_from, salary_to = get_salary_range_hh(vacancy)
         salary = predict_salary(salary_from, salary_to)
         vacancy_salaries.append(salary)
-    total_vacancies = len(vacancy_salaries)
+    total_vacancies = fetch_hh_vacancies_number(hh_url, language)
     table_content = get_table_content(
         vacancy_salaries, total_vacancies, language)
     return table_content
+
+
+def fetch_hh_vacancies_number(url, language):
+    moscow_id = 1
+    days_to_parse = 30
+    payload = {
+        'text': f'программист {language}',
+        'area': moscow_id,
+        'period': days_to_parse,
+        'only_with_salary': True,
+    }
+    response = requests.get(url, params=payload)
+    response.raise_for_status()
+    return response.json()['found']
+
+
+def fetch_sj_vacancies_number(url, language, token):
+    header = {'X-Api-App-Id': token}
+    payload = {
+        'keyword': f'Программист {language}',
+        'catalogues': 'Разработка, программирование',
+        'town': 'Москва',
+        'currency': 'rub',
+    }
+    response = requests.get(url, params=payload, headers=header)
+    response.raise_for_status()
+    return response.json()['total']
 
 
 if __name__ == '__main__':
