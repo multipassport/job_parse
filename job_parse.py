@@ -20,14 +20,15 @@ def get_salary_range_hh(vacancy):
 def predict_salary(salary_from, salary_to):
     salary_to_coefficient = 0.8
     salary_from_coefficient = 1.2
+
     if not salary_from and not salary_to:
         return None
     elif salary_from and salary_to:
         mean_salary = (salary_from + salary_to) / 2
-    elif not salary_from:
-        mean_salary = salary_to * salary_to_coefficient
-    elif not salary_to:
+    elif salary_from:
         mean_salary = salary_from * salary_from_coefficient
+    elif salary_to:
+        mean_salary = salary_to * salary_to_coefficient
     return mean_salary
 
 
