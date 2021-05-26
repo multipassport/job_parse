@@ -1,12 +1,11 @@
 import logging
-import numpy
 import os
 import requests
 
 from dotenv import load_dotenv
 from itertools import count
-from math import isnan
 from requests.exceptions import HTTPError
+from statistics import mean
 from terminaltables import AsciiTable
 
 
@@ -74,15 +73,15 @@ def fetch_vacancies_sj(url, language, token):
 
 
 def get_table_content(vacancy_salaries, total_vacancies, language):
-    mean_salary = numpy.nanmean(numpy.array(vacancy_salaries, dtype=float))
+    vacancies_processed = len(vacancy_salaries)
 
-    vacancies_processed = sum(1 for salary in vacancy_salaries if salary)
     table_content = {
         'vacancies_found': total_vacancies,
         'vacancies_processed': vacancies_processed,
         'average_salary': None
     }
-    if not isnan(mean_salary):
+    if vacancy_salaries:
+        mean_salary = mean(vacancy_salaries)
         table_content['average_salary'] = int(mean_salary)
     return table_content
 
@@ -116,8 +115,8 @@ def get_sj_table_content(language):
     for vacancy in vacancies:
         minimal_salary = vacancy['payment_from']
         maximal_salary = vacancy['payment_to']
-        salary = predict_salary(minimal_salary, maximal_salary)
-        vacancy_salaries.append(salary)
+        if salary := predict_salary(minimal_salary, maximal_salary):
+            vacancy_salaries.append(salary)
     total_vacancies = fetch_sj_vacancies_number(sj_url, language, sj_token)
     table_content = get_table_content(
         vacancy_salaries, total_vacancies, language)
@@ -130,8 +129,8 @@ def get_hh_table_content(language):
 
     for vacancy in vacancies:
         salary_from, salary_to = get_salary_range_hh(vacancy)
-        salary = predict_salary(salary_from, salary_to)
-        vacancy_salaries.append(salary)
+        if salary := predict_salary(salary_from, salary_to):
+            vacancy_salaries.append(salary)
     total_vacancies = fetch_hh_vacancies_number(hh_url, language)
     table_content = get_table_content(
         vacancy_salaries, total_vacancies, language)
@@ -177,25 +176,25 @@ if __name__ == '__main__':
     languages = [
         'Python',
         'Java',
-        # 'JavaScript',
-        # 'C#',
-        # 'PHP',
-        # 'C',
-        # 'C++',
-        # 'R',
-        # 'Objective-C',
-        # 'Swift',
-        # 'TypeScript',
-        # 'Matlab',
-        # 'Kotlin',
-        # 'Go',
-        # 'Ruby',
-        # 'VBA',
-        # 'RUST',
-        # 'Scala',
-        # 'Visual Basic',
-        # 'Ada',
-        # 'Lua',
+        'JavaScript',
+        'C#',
+        'PHP',
+        'C',
+        'C++',
+        'R',
+        'Objective-C',
+        'Swift',
+        'TypeScript',
+        'Matlab',
+        'Kotlin',
+        'Go',
+        'Ruby',
+        'VBA',
+        'RUST',
+        'Scala',
+        'Visual Basic',
+        'Ada',
+        'Lua',
         ]
 
     for language in languages:
