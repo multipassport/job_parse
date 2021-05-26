@@ -4,7 +4,7 @@ import requests
 
 from dotenv import load_dotenv
 from itertools import count
-from requests.exceptions import HTTPError
+from requests.exceptions import (HTTPError, ConnectionError)
 from statistics import mean
 from terminaltables import AsciiTable
 
