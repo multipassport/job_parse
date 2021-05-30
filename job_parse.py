@@ -36,9 +36,10 @@ def fetch_vacancies_hh(url, payload):
         payload['page'] = page
         response = requests.get(url, params=payload)
         response.raise_for_status()
-
-        yield response.json()['items'], response.json()['found']
-        if page + 1 >= response.json()['pages']:
+        received_vacancies = response.json()
+        
+        yield received_vacancies['items'], received_vacancies['found']
+        if page + 1 >= received_vacancies['pages']:
             break
 
 
@@ -47,9 +48,10 @@ def fetch_vacancies_sj(url, header, payload):
         payload['page'] = page
         response = requests.get(url, params=payload, headers=header)
         response.raise_for_status()
+        received_vacancies = response.json()
 
-        yield response.json()['objects'], response.json()['total']
-        if not response.json()['more']:
+        yield received_vacancies['objects'], received_vacancies['total']
+        if not received_vacancies['more']:
             break
 
 
@@ -103,8 +105,7 @@ def get_sj_table_content(language, token):
     }
 
     vacancy_salaries = []
-    for page_of_response in fetch_vacancies_sj(url, header, payload):
-        vacancies, total_vacancies = page_of_response
+    for vacancies, total_vacancies in fetch_vacancies_sj(url, header, payload):
         for vacancy in vacancies:
             minimal_salary = vacancy['payment_from']
             maximal_salary = vacancy['payment_to']
@@ -131,8 +132,7 @@ def get_hh_table_content(language):
     }
 
     vacancy_salaries = []
-    for page_of_response in fetch_vacancies_hh(url, payload):
-        vacancies, total_vacancies = page_of_response
+    for vacancies, total_vacancies in fetch_vacancies_hh(url, payload):
         for vacancy in vacancies:
             salary_from, salary_to = get_salary_range_hh(vacancy)
             if salary := predict_salary(salary_from, salary_to):
